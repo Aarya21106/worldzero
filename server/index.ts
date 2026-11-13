@@ -5,7 +5,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Runtime } from './runtime';
-import { dateOf, SECTORS, type World, type Citizen, type Org } from './sim/types';
+import { dateOf, SECTORS, SIM_VERSION, type World, type Citizen, type Org } from './sim/types';
 import { isActive, typeLabel } from './sim/world';
 import { infectionLabel } from './sim/health';
 import { essentialCost } from './sim/economy';
@@ -132,7 +132,7 @@ function dashboard(w: World) {
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const port = Number(process.env.PORT || 4000);
   const t0 = Date.now();
-  const rt = new Runtime(process.env.WORLDZERO_DB || resolve(root, 'data', 'worldzero.db'), { seed: process.env.WORLD_SEED ? Number(process.env.WORLD_SEED) : undefined }).init();
+  const rt = new Runtime(process.env.WORLDZERO_DB || resolve(root, 'data', `worldzero-v${SIM_VERSION}.db`), { seed: process.env.WORLD_SEED ? Number(process.env.WORLD_SEED) : undefined, population: process.env.WORLD_POPULATION ? Number(process.env.WORLD_POPULATION) : undefined }).init();
   rt.start();
   const app = buildApp(rt);
   app.listen({ port, host: '127.0.0.1' }).then(() => console.log(`WORLDZERO ready on http://localhost:${port} — ${rt.world.metrics.population} citizens, day ${rt.world.tick} (${Date.now() - t0} ms). Interpreter: ${rt.status().llm.provider}`));

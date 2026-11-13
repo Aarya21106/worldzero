@@ -173,12 +173,18 @@ export function placeOrg(w: World, o: Org, opts: { nameHint?: string; constructi
     }
   }
   const b = newBuilding(w, bkind, kinds, { nameHint: opts.nameHint, construction: opts.construction, name: o.name });
-  if (!b) return false;
+  if (!b) {
+    // city is full: share an existing building of the right kind rather than leaving the organisation homeless
+    const any = w.buildings.find((x) => x.kind === bkind && x.status !== 'construction') || w.buildings.find((x) => x.kind !== 'residential' && x.status !== 'construction');
+    if (!any) return false;
+    any.orgs.push(o.id); if (any.status === 'vacant') any.status = 'active'; o.building = any.id; o.district = any.district;
+    return true;
+  }
   b.orgs.push(o.id); o.building = b.id; o.district = b.district;
   return true;
 }
 
-const FOOT: Record<BuildingKind, [number, number]> = { residential: [26, 26], commercial: [30, 26], office: [28, 28], industrial: [36, 32], university: [36, 34], school: [34, 28], hospital: [36, 34], lab: [30, 28], government: [34, 32], utility: [30, 30] };
+const FOOT: Record<BuildingKind, [number, number]> = { residential: [24, 24], commercial: [27, 23], office: [26, 26], industrial: [30, 28], university: [30, 28], school: [28, 24], hospital: [30, 28], lab: [27, 25], government: [29, 27], utility: [26, 26] };
 
 export function newBuilding(w: World, kind: BuildingKind, districtKinds: DistrictKind[], opts: { nameHint?: string; construction?: boolean; name?: string; units?: number; district?: number } = {}): Building | null {
   let ds = w.districts.filter((d) => (opts.district !== undefined ? d.id === opts.district : districtKinds.includes(d.kind)) && d.lots.some((l) => !l.used));
@@ -190,7 +196,7 @@ export function newBuilding(w: World, kind: BuildingKind, districtKinds: Distric
   const lot = free[Math.floor(rand(w) * free.length)];
   lot.used = true;
   const [fw, fd] = FOOT[kind];
-  const b: Building = { id: w.buildings.length, district: d.id, x: lot.x, z: lot.z, w: fw * (0.85 + rand(w) * 0.25), d: fd * (0.85 + rand(w) * 0.25), h: 12, kind, status: opts.construction ? 'construction' : 'active', units: opts.units || 0, occupied: 0, orgs: [], built: w.tick, readyAt: opts.construction ? w.tick + 60 : w.tick, name: opts.name || '' };
+  const b: Building = { id: w.buildings.length, district: d.id, x: lot.x, z: lot.z, w: fw * (0.88 + rand(w) * 0.17), d: fd * (0.88 + rand(w) * 0.17), h: 12, kind, status: opts.construction ? 'construction' : 'active', units: opts.units || 0, occupied: 0, orgs: [], built: w.tick, readyAt: opts.construction ? w.tick + 60 : w.tick, name: opts.name || '' };
   w.buildings.push(b);
   return b;
 }

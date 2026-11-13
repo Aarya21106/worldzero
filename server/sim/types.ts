@@ -1,6 +1,6 @@
 // WORLDZERO — versioned world-state model. Everything in here is plain JSON so the
 // whole world can be cloned, snapshotted, branched and restored deterministically.
-export const SIM_VERSION = 3;
+export const SIM_VERSION = 4;
 export const DAYS_PER_MONTH = 30;
 export const DAYS_PER_YEAR = 360;
 

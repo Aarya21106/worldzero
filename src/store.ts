@@ -12,14 +12,14 @@ interface S {
   status: any | null; cityStatic: any | null; city: any | null; events: any[];
   selected: string | null; inspector: any | null; focus: { x: number; z: number; n: number } | null;
   chat: ChatMsg[]; godBusy: boolean; godStage: { stage: string; detail?: string } | null;
-  overlay: string; colorBy: string; panel: string | null; timelinesV: number; connected: boolean;
+  overlay: string; colorBy: string; panel: string | null; timelinesV: number; connected: boolean; night: boolean;
   select(ref: string | null, fly?: boolean): void; refreshInspector(): void; sendGod(text: string): void; control(action: string, value?: any): void;
   set(p: Partial<S>): void; loadCity(): Promise<void>; init(): void;
 }
 
 export const useStore = create<S>((set, get) => ({
   status: null, cityStatic: null, city: null, events: [], selected: null, inspector: null, focus: null,
-  chat: [], godBusy: false, godStage: null, overlay: 'none', colorBy: 'status', panel: null, timelinesV: 0, connected: false,
+  chat: [], godBusy: false, godStage: null, overlay: 'none', colorBy: 'status', panel: null, timelinesV: 0, connected: false, night: (() => { try { return localStorage.getItem('wz.night') !== '0'; } catch { return true; } })(),
   set: (p) => set(p),
   async loadCity() { const c = await api('/city'); set({ cityStatic: c.static, city: c.dynamic }); },
   async select(ref, fly = true) {

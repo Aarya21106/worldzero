@@ -12,8 +12,21 @@ npm start          # builds the UI and starts the server on http://localhost:400
 
 `npm run dev` runs the server plus Vite hot-reload on http://localhost:5173. `npm test` runs the acceptance tests.
 
-The world is generated once (≈5,200 citizens, ≈2,200 households, ≈340 organisations, 20 districts) and then persists in
-`data/worldzero.db`. Delete that file to found a new civilisation (`WORLD_SEED=123` picks the seed).
+The world is generated once (≈15,000 citizens, ≈6,500 households, ≈960 organisations and ≈980 buildings across 36 districts
+split by a river) and then persists in `data/worldzero-v4.db`. Delete that file to found a new civilisation.
+`WORLD_SEED=123` picks the seed and `WORLD_POPULATION=25000` changes the size of a newly founded world: organisation counts,
+migration, construction and default event sizes all scale with it.
+
+## Version 2
+
+- Population tripled to ~15,000 (simulates at ~1.7 ms per day; a year in about 0.6 s).
+- 6×6 district map with a river and bridges, cross streets inside every district, lane-marked avenues and street trees.
+- Building form follows kind and neighbourhood wealth: brick blocks, mid-rise apartments, villas with pitched roofs, glass
+  podium towers that rise toward the centre, factories with chimneys.
+- Lit windows show real occupancy (homes) and staffing (workplaces); vacant buildings go dark.
+- Traffic: a sample of real employed commuters drive their actual home→work routes. Cars and pedestrians stop when the
+  simulation is paused.
+- Day / night lighting toggle (visual only).
 
 ## GOD MODE interpreter
 

@@ -325,7 +325,7 @@ export function monthlyEconomy(w: World): Flows {
     const bargaining = clamp(1.25 - u * 6, 0.25, 1.1);
     const wageGrowth = clamp(0.55 * Math.max(0, mInfl) * bargaining + clamp(0.06 * (S.util - 0.92), -0.002, 0.004) + (u < 0.04 ? 0.002 : 0) - clamp((u - 0.09) * 0.02, 0, 0.003), -0.004, 0.03);
     S.wageIdx *= 1 + wageGrowth;
-    if (wageGrowth !== 0) for (const o of orgs) for (const id of o.employees) { const c = w.citizens[id]; c.wage = Math.round(c.wage * (1 + wageGrowth * 0.7)); }
+    if (wageGrowth !== 0) for (const o of orgs) for (const id of o.employees) { const c = w.citizens[id]; const nw = Math.round(c.wage * (1 + wageGrowth * 0.7)); c.wage = id === o.owner ? nw : Math.max(Math.round(pol.minWage), nw); } // the legal minimum binds after wage drift too
     S.price = Math.max(0.15, S.price * (1 + pressure + 0.3 * wageGrowth));
   }
   // energy & import price pass-through on goods

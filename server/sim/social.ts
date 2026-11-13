@@ -161,7 +161,7 @@ export function monthlySocial(w: World) {
   // ---- migration ---------------------------------------------------------------------------
   const u = w.metrics.unemployment ?? 0.06;
   const attract = clamp(1 + (0.07 - u) * 8 + ((w.metrics.openings || 0) / Math.max(1, w.metrics.labourForce || 2500)) * 12 + (happy - 0.6) * 2 - (w.housing.avgRent - 1) * 0.8 - S.unrest * 2 - fear, 0, 4);
-  const arrivals = Math.round(1.6 * pol.immigration * attract * (0.6 + rand(w) * 0.8) + (w.mods.immigrationPush || 0));
+  const arrivals = Math.round(1.6 * (w.mods.scale ?? 1) * pol.immigration * attract * (0.6 + rand(w) * 0.8) + (w.mods.immigrationPush || 0));
   if (arrivals > 0 && w.housing.vacancy > 0.01) immigrate(w, arrivals, { skilled: (w.mods.techBoom || 0) > 0.3 && rand(w) < 0.6 });
 }
 

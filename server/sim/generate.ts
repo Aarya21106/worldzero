@@ -9,13 +9,18 @@ import { calibrateEconomy } from './economy';
 import { computeMetrics, recordHistory } from './metrics';
 import { tick } from './tick';
 
+// 6×6 district grid split by a north–south river (between columns 2 and 3). Downtown sits on the river,
+// industry on the western edge, affluent neighbourhoods to the north-east.
 const MAP: [string, DistrictKind, number][][] = [
-  [['Northgate', 'residential', 0], ['Highlands', 'residential', 2], ['University Hill', 'university', 1], ['Helix Research Campus', 'research', 1], ['Maple Court', 'residential', 1]],
-  [['Riverside', 'residential', 1], ['Old Market', 'commercial', 1], ['Downtown Core', 'business', 2], ['Axiom Tech Park', 'business', 2], ['Mercy Medical District', 'medical', 1]],
-  [['Ironworks', 'industrial', 0], ['Civic Center', 'government', 1], ['Central Commons', 'park', 1], ['Meridian Financial Quarter', 'business', 2], ['Lakeside', 'residential', 2]],
-  [['Eastyard', 'industrial', 0], ['Southside', 'residential', 0], ['Harbour Exchange', 'commercial', 1], ['Greenfield', 'residential', 1], ['Brookvale', 'residential', 0]],
+  [['Northgate', 'residential', 0], ['Highlands', 'residential', 2], ['University Hill', 'university', 1], ['Helix Research Campus', 'research', 1], ['Maple Court', 'residential', 1], ['Lakeside', 'residential', 2]],
+  [['Riverside', 'residential', 1], ['Old Market', 'commercial', 1], ['Kestrel College Park', 'university', 1], ['Axiom Tech Park', 'business', 2], ['Mercy Medical District', 'medical', 1], ['Birchwood', 'residential', 1]],
+  [['Ironworks', 'industrial', 0], ['Civic Center', 'government', 1], ['Downtown Core', 'business', 2], ['Meridian Financial Quarter', 'business', 2], ['Central Commons', 'park', 1], ['Elmhurst', 'residential', 2]],
+  [['Foundry Row', 'industrial', 0], ['Southside', 'residential', 0], ['Harbour Exchange', 'commercial', 1], ['Midtown Plaza', 'business', 2], ['St. Ana Medical Campus', 'medical', 1], ['Greenfield', 'residential', 1]],
+  [['Westyard', 'industrial', 0], ['Brookvale', 'residential', 0], ['Canal Street', 'commercial', 1], ['Quantum Research Park', 'research', 1], ['Willow Park', 'park', 1], ['Oakridge', 'residential', 1]],
+  [['Docklands', 'residential', 0], ['Millbrook', 'residential', 0], ['Market Square', 'commercial', 1], ['Sunset Heights', 'residential', 1], ['Cedar Grove', 'residential', 1], ['Riverbend Park', 'park', 1]],
 ];
-export const PITCH = 360, CELL = 320, LOTN = 7, LOTP = 42;
+export const PITCH = 360, CELL = 320, LOTN = 8, LOTP = 36, STREET_GAP = 28, RIVER_GAP = 90, RIVER_COL = 3;
+export const DEFAULT_POPULATION = 15000;
 
 export const BASE_WAGE: Record<Sector, number> = { food: 2300, retail: 2300, tech: 5200, manufacturing: 3300, finance: 5600, healthcare: 4200, education: 3400, construction: 3200, energy: 4300, media: 3400, services: 2500, government: 3600, research: 4800 };
 
@@ -114,13 +119,16 @@ export function makeOrg(w: World, type: OrgType, sector: Sector, opts: { name?: 
 
 function layoutDistricts(w: World) {
   let id = 0;
-  for (let r = 0; r < MAP.length; r++) for (let c = 0; c < MAP[r].length; c++) {
+  const R = MAP.length, C = MAP[0].length;
+  // lots are arranged in four blocks per district, separated by a cross street through the district centre
+  const off = (k: number) => (k - (LOTN - 1) / 2) * LOTP + (k >= LOTN / 2 ? STREET_GAP / 2 : -STREET_GAP / 2);
+  for (let r = 0; r < R; r++) for (let c = 0; c < C; c++) {
     const [name, kind, wealth] = MAP[r][c];
-    const x = (c - 2) * PITCH, z = (r - 1.5) * PITCH;
+    const x = (c - (C - 1) / 2) * PITCH + (c >= RIVER_COL ? RIVER_GAP / 2 : -RIVER_GAP / 2), z = (r - (R - 1) / 2) * PITCH;
     const lots = [];
     for (let i = 0; i < LOTN; i++) for (let j = 0; j < LOTN; j++) {
       if (kind === 'park' && !((i === 0 || i === LOTN - 1) && (j === 0 || j === LOTN - 1))) continue;
-      lots.push({ x: x + (i - 3) * LOTP, z: z + (j - 3) * LOTP, used: false });
+      lots.push({ x: x + off(i), z: z + off(j), used: false });
     }
     const d: District = { id: id++, name, kind, wealth, x, z, w: CELL, d: CELL, lots, rentIdx: 1, crime: 0.2, unemp: 0.06, pop: 0, infected: 0, avgIncome: 0, protest: 0, activity: 1, happy: 0.6 };
     w.districts.push(d);
@@ -142,8 +150,11 @@ function rebase(w: World, d: number) {
   w.tech.progress = 0;
 }
 
-export function generateWorld(seed = 20400101, targetPop = 5200): World {
+export function generateWorld(seed = 20400101, targetPop = DEFAULT_POPULATION): World {
   const w = blankWorld(seed);
+  const K = targetPop / 5200; // scale relative to the v1 calibration city
+  w.mods.scale = K;
+  w.mods['geo.riverX'] = (RIVER_COL - 0.5 - (MAP[0].length - 1) / 2) * PITCH; w.mods['geo.riverW'] = PITCH - CELL + RIVER_GAP;
   layoutDistricts(w);
 
   // ---- households & citizens -------------------------------------------------
@@ -177,14 +188,14 @@ export function generateWorld(seed = 20400101, targetPop = 5200): World {
   }
 
   // ---- housing ----------------------------------------------------------------
-  const unitsTarget = [12, 9, 3];
+  const unitsTarget = [14, 10, 4];
   for (let cls = 0; cls < 3; cls++) {
     const ds = w.districts.filter((d) => d.kind === 'residential' && d.wealth === cls);
     const hhs = w.households.filter((h) => h.wclass === cls);
     const per = Math.ceil(hhs.length / ds.length);
     ds.forEach((d, di) => {
       const mine = hhs.slice(di * per, (di + 1) * per);
-      const nb = Math.min(36, Math.ceil(mine.length / unitsTarget[cls]));
+      const nb = Math.min(48, Math.ceil(mine.length / unitsTarget[cls]));
       const units = Math.ceil((mine.length * 1.08) / nb);
       const bs = [];
       for (let i = 0; i < nb; i++) {
@@ -214,17 +225,20 @@ export function generateWorld(seed = 20400101, targetPop = 5200): World {
     target.set(o.id, randInt(w, lo, hi));
     return o;
   };
+  // organisation counts scale with population so per-organisation headcounts stay realistic
+  const N = (base: number) => Math.max(1, Math.round(base * K));
   const corpSectors: [Sector, string?][] = [['tech', 'Tech'], ['tech', 'Tech'], ['tech', 'Downtown'], ['manufacturing'], ['manufacturing'], ['retail'], ['retail'], ['food'], ['food'], ['energy'], ['construction'], ['services', 'Downtown']];
-  for (const [s, hint] of corpSectors) add('corporation', s, 50, 130, undefined, hint);
-  for (let i = 0; i < 4; i++) add('bank', 'finance', 15, 30, undefined, 'Financial');
-  for (let i = 0; i < 4; i++) add('investment_firm', 'finance', 6, 14, undefined, 'Financial');
-  for (let i = 0; i < 2; i++) add('university', 'education', 55, 85);
-  for (const d of w.districts.filter((d) => d.kind === 'residential')) { const o = makeOrg(w, 'school', 'education'); const b = newBuilding(w, 'school', ['residential'], { district: d.id, name: o.name })!; b.orgs.push(o.id); o.building = b.id; o.district = d.id; target.set(o.id, randInt(w, 16, 26)); }
-  for (let i = 0; i < 3; i++) add('hospital', 'healthcare', 70, 110);
-  for (let i = 0; i < 5; i++) add('research_lab', 'research', 12, 26);
-  for (const n of GOV_DEPTS) add('gov_department', 'government', 18, 45, n);
-  for (let i = 0; i < 4; i++) add('media', 'media', 10, 20);
-  for (let i = 0; i < 8; i++) add('nonprofit', 'services', 4, 10);
+  for (let i = 0; i < N(12); i++) { const [s, hint] = corpSectors[i % corpSectors.length]; add('corporation', s, 50, 130, undefined, hint); }
+  for (let i = 0; i < N(4); i++) add('bank', 'finance', 15, 30, undefined, 'Financial');
+  for (let i = 0; i < N(4); i++) add('investment_firm', 'finance', 6, 14, undefined, 'Financial');
+  for (let i = 0; i < N(2); i++) add('university', 'education', 55, 85);
+  const resDistricts = w.districts.filter((d) => d.kind === 'residential');
+  for (const d of resDistricts) { const o = makeOrg(w, 'school', 'education'); const b = newBuilding(w, 'school', ['residential'], { district: d.id, name: o.name })!; b.orgs.push(o.id); o.building = b.id; o.district = d.id; target.set(o.id, Math.round((randInt(w, 16, 26) * K * 8) / resDistricts.length)); }
+  for (let i = 0; i < N(3); i++) add('hospital', 'healthcare', 70, 110);
+  for (let i = 0; i < N(5); i++) add('research_lab', 'research', 12, 26);
+  for (const n of GOV_DEPTS) add('gov_department', 'government', Math.round(18 * K), Math.round(45 * K), n);
+  for (let i = 0; i < N(4); i++) add('media', 'media', 10, 20);
+  for (let i = 0; i < N(8); i++) add('nonprofit', 'services', 4, 10);
 
   // owners for startups and small businesses
   const lf = w.citizens.filter((c) => c.age >= 18 && c.age < 65 && c.status !== 'student');
@@ -237,13 +251,13 @@ export function generateWorld(seed = 20400101, targetPop = 5200): World {
     for (let i = fp; i < founders.length; i++) { const c = founders[i]; if (isOwner.has(c.id) || c.age < 24) continue; if (needDegree && c.edu < 3) continue; isOwner.add(c.id); if (i === fp) fp++; return c; }
     const c = founders.find((x) => !isOwner.has(x.id))!; isOwner.add(c.id); return c;
   };
-  for (let i = 0; i < 42; i++) {
+  for (let i = 0; i < N(42); i++) {
     const s = weighted(w, ['tech', 'healthcare', 'energy', 'finance', 'services', 'media'] as Sector[], [0.55, 0.1, 0.08, 0.1, 0.1, 0.07]);
     const f = takeFounder(true);
     const o = makeOrg(w, 'startup', s, { owner: f }); placeOrg(w, o, { nameHint: s === 'tech' ? 'Tech' : undefined }); target.set(o.id, randInt(w, 3, 14));
     o.stage = pick(w, ['Seed', 'Seed', 'Series A', 'Series A', 'Series B']);
   }
-  for (let i = 0; i < 240; i++) {
+  for (let i = 0; i < N(240); i++) {
     const s = weighted(w, ['food', 'retail', 'services', 'construction', 'manufacturing', 'healthcare', 'tech'] as Sector[], [0.25, 0.27, 0.28, 0.07, 0.05, 0.05, 0.03]);
     const f = takeFounder(false);
     const o = makeOrg(w, 'small_business', s, { owner: f }); placeOrg(w, o); target.set(o.id, randInt(w, 2, 9));

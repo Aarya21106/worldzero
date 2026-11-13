@@ -13,7 +13,7 @@ export function startDisease(w: World, o: { name?: string; contagion?: number; s
   const d: Disease = { id: w.nextIds.disease++, name: o.name || pick(w, DISEASE_NAMES.filter((n) => !w.health.diseases.some((x) => x.name === n)).concat(DISEASE_NAMES).slice(0, 6)), beta: clamp(o.contagion ?? 0.5, 0.05, 1) * 0.4, incubation: 3, duration: 9, severity: 0.03 + sev * 0.22, mortality: o.mortality ?? 0.01 + sev * 0.09, started: w.tick, active: true, totalInfected: 0, deaths: 0, peak: 0 };
   w.health.diseases.push(d);
   const pool = w.citizens.filter((c) => isActive(c) && c.inf === 0);
-  const seeds = Math.min(pool.length, o.seeds ?? 12);
+  const seeds = Math.min(pool.length, o.seeds ?? Math.round(12 * (w.mods.scale ?? 1)));
   for (let i = 0; i < seeds; i++) { const c = pool[Math.floor(rand(w) * pool.length)]; if (c.inf === 0) { c.inf = 2; c.infDays = 0; d.totalInfected++; } }
   return d;
 }

@@ -138,14 +138,14 @@ describe('Test 8 — city data for the 3D view reflects the world', () => {
     const app = buildApp(rt);
     const city = JSON.parse((await app.inject({ url: '/api/city' })).body);
     expect(city.dynamic.citizens.st.length).toBe(rt.world.citizens.length);
-    expect(city.static.districts.length).toBe(20);
+    expect(city.static.districts.length).toBe(36);
     const c = JSON.parse((await app.inject({ url: '/api/citizen/42' })).body);
     expect(c.name).toBe(rt.world.citizens[42].name); expect(c.traits).toBeTruthy();
-    const nb = rt.world.buildings.length;
+    const nb = rt.world.buildings.length, nu = rt.world.orgs.filter((o) => o.alive && o.type === 'university').length;
     await rt.god('Build a new university');
     const city2 = JSON.parse((await app.inject({ url: '/api/city' })).body);
-    expect(city2.dynamic.buildings.length).toBeGreaterThan(nb);
-    expect(rt.world.orgs.filter((o) => o.alive && o.type === 'university').length).toBe(3);
+    expect(city2.dynamic.buildings.length).toBeGreaterThanOrEqual(nb);
+    expect(rt.world.orgs.filter((o) => o.alive && o.type === 'university').length).toBe(nu + 1);
   });
 });
 

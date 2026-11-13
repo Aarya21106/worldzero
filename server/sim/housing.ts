@@ -50,9 +50,9 @@ export function monthlyHousing(w: World) {
   // construction response
   H.pipeline *= 0.5;
   const builders = w.orgs.some((o) => o.alive && o.sector === 'construction');
-  if (builders && (H.vacancy < 0.07 || (homeless > hhN * 0.006 && H.vacancy < 0.1)) && w.market.credit > 0.4 && w.buildings.filter((b) => b.status === 'construction' && b.kind === 'residential').length < 4) {
+  if (builders && (H.vacancy < 0.07 || (homeless > hhN * 0.006 && H.vacancy < 0.1)) && w.market.credit > 0.4 && w.buildings.filter((b) => b.status === 'construction' && b.kind === 'residential').length < Math.ceil(4 * (w.mods.scale ?? 1))) {
     const ds = w.districts.filter((d) => d.kind === 'residential' && d.lots.some((l) => !l.used)).sort((a, b) => (1 - dOcc[a.id] / Math.max(1, dCap[a.id])) - (1 - dOcc[b.id] / Math.max(1, dCap[b.id])));
-    const d = homeless > 5 ? ds.find((x) => x.wealth === 0) || ds[0] : ds[0];
+    const d = homeless > 5 * (w.mods.scale ?? 1) ? ds.find((x) => x.wealth === 0) || ds[0] : ds[0];
     if (d) {
       const units = [14, 10, 4][d.wealth] + Math.floor(rand(w) * 4);
       const b = newBuilding(w, 'residential', ['residential'], { district: d.id, units, construction: true, name: `${d.name} New Development ${w.buildings.length}` });

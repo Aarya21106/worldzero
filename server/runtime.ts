@@ -2,7 +2,7 @@
 // autosave, snapshots, rewind and alternate timelines.
 import type { World } from './sim/types';
 import { dateOf, SIM_VERSION } from './sim/types';
-import { generateWorld } from './sim/generate';
+import { generateWorld, CELL, STREET_GAP } from './sim/generate';
 import { tick } from './sim/tick';
 import { computeMetrics } from './sim/metrics';
 import { isActive } from './sim/world';
@@ -45,7 +45,7 @@ export class Runtime implements Host {
   }
   private advance() {
     const w = this.world; tick(w);
-    if (w.tick % 30 === 0) { this.cityVersion++; if (w.tick % 90 === 0) { this.store.addSnapshot(uid('s'), this.timelineId, `Auto ${dateOf(w.tick)}`, 'auto', w); this.store.pruneSnapshots(this.timelineId, 'auto', 16); } }
+    if (w.tick % 30 === 0) { this.cityVersion++; if (w.tick % 90 === 0) { this.store.addSnapshot(uid('s'), this.timelineId, `Auto ${dateOf(w.tick)}`, 'auto', w); this.store.pruneSnapshots(this.timelineId, 'auto', 10); } }
     else if (w.health.diseases.some((d) => d.active) && w.tick % 3 === 0) this.cityVersion++;
   }
   stepDays(n: number) { if (this.busy) return; for (let i = 0; i < n; i++) this.advance(); this.cityVersion++; this.pushTick(true); }
@@ -102,7 +102,7 @@ export class Runtime implements Host {
     } finally { this.busy = false; this.last = Date.now(); this.pushTick(true); }
   }
 
-  cityStatic() { const w = this.world; return { name: w.name, districts: w.districts.map((d) => ({ id: d.id, name: d.name, kind: d.kind, wealth: d.wealth, x: d.x, z: d.z, w: d.w, d: d.d })), buildingKinds: BK, statuses: ST }; }
+  cityStatic() { const w = this.world; return { name: w.name, geo: { riverX: w.mods['geo.riverX'] ?? 0, riverW: w.mods['geo.riverW'] ?? 0, cell: CELL, street: STREET_GAP - 6 }, districts: w.districts.map((d) => ({ id: d.id, name: d.name, kind: d.kind, wealth: d.wealth, x: d.x, z: d.z, w: d.w, d: d.d })), buildingKinds: BK, statuses: ST }; }
   cityDynamic() {
     const w = this.world, n = w.citizens.length;
     const home = new Array(n), work = new Array(n), st = new Array(n), tier = new Array(n);
@@ -115,7 +115,7 @@ export class Runtime implements Host {
     }
     return {
       version: this.cityVersion, tick: w.tick,
-      buildings: w.buildings.map((b) => [b.id, b.district, Math.round(b.x), Math.round(b.z), Math.round(b.w), Math.round(b.d), Math.round(b.h), BK.indexOf(b.kind), b.status === 'active' ? 0 : b.status === 'vacant' ? 1 : 2, b.units, b.occupied, b.orgs.filter((id) => w.orgs[id].alive).length, b.built]),
+      buildings: w.buildings.map((b) => [b.id, b.district, Math.round(b.x), Math.round(b.z), Math.round(b.w), Math.round(b.d), Math.round(b.h), BK.indexOf(b.kind), b.status === 'active' ? 0 : b.status === 'vacant' ? 1 : 2, b.units, b.occupied, b.orgs.filter((id) => w.orgs[id].alive).length, b.built, b.orgs.reduce((n, id) => n + (w.orgs[id].alive ? w.orgs[id].employees.length : 0), 0)]),
       citizens: { home, work, st, tier },
       districts: w.districts.map((d) => ({ id: d.id, pop: d.pop, unemp: d.unemp, crime: d.crime, rent: d.rentIdx, income: d.avgIncome, infected: d.infected, protest: d.protest, happy: d.happy })),
       civic: w.districts.find((d) => d.kind === 'government')!.id,

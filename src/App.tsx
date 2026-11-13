@@ -36,7 +36,7 @@ function TopBar() {
 }
 
 function TimeControls() {
-  const st = useStore((s) => s.status), control = useStore((s) => s.control), overlay = useStore((s) => s.overlay), colorBy = useStore((s) => s.colorBy), set = useStore((s) => s.set), tl = useStore((s) => s.timelinesV);
+  const st = useStore((s) => s.status), control = useStore((s) => s.control), overlay = useStore((s) => s.overlay), colorBy = useStore((s) => s.colorBy), set = useStore((s) => s.set), tl = useStore((s) => s.timelinesV), night = useStore((s) => s.night);
   const [name, setName] = useState('');
   useEffect(() => { api('/timelines').then((t) => setName(t.timelines.find((x: any) => x.id === t.active)?.name || '')).catch(() => {}); }, [tl, st?.timeline]);
   if (!st) return null;
@@ -46,6 +46,7 @@ function TimeControls() {
       <button className="btn" onClick={() => control('step', 1)} title="Advance one day">+1 day</button>
       <button className="btn" onClick={() => control('step', 30)} title="Advance one month">+1 month</button>
       {SPEEDS.map((s) => <button key={s} className={`btn sm ${st.speed === s ? 'on' : ''}`} onClick={() => control('speed', s)}>{s}×</button>)}
+      <button className="btn sm" title="Toggle day / night lighting (visual only)" onClick={() => { set({ night: !night }); try { localStorage.setItem('wz.night', night ? '0' : '1'); } catch { /* ignore */ } }}>{night ? '☀ Day' : '☾ Night'}</button>
       <button className="btn sm" title="Save a snapshot of the whole world" onClick={() => api('/snapshots', { label: `Snapshot ${st.date}` }).then(() => set({ panel: 'time' }))}>⦿ Snapshot</button>
     </div>
     <div className="row dim">

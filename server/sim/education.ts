@@ -51,7 +51,7 @@ export function monthlyEducation(w: World) {
     for (let i = admitted; i < applicants.length; i++) { const c = applicants[i]; if (rand(w) < 0.4) c.wantsUni = false; remember(w, c, 'rejected', 'University had no place for me this intake', -0.4); }
     E.applicants = applicants.length; E.rejected = rejected; E.enrolled = enrolled + admitted;
     count(w, 'edu.applicants', applicants.length); count(w, 'edu.rejected', rejected);
-    if (rejected > Math.max(20, E.capacity * 0.05)) emit(w, { cat: 'education', type: 'capacity', title: `Universities turn away ${rejected} applicants`, detail: `${applicants.length} applied for ${free} free places (capacity ${E.capacity}).`, sev: 0.4, why: `applications exceed staffed capacity; tuition subsidy is ${pct(w.policy.tuitionSubsidy, 0)}`, district: w.districts.find((d) => d.kind === 'university')!.id });
+    if (rejected > Math.max(20 * (w.mods.scale ?? 1), E.capacity * 0.05)) emit(w, { cat: 'education', type: 'capacity', title: `Universities turn away ${rejected} applicants`, detail: `${applicants.length} applied for ${free} free places (capacity ${E.capacity}).`, sev: 0.4, why: `applications exceed staffed capacity; tuition subsidy is ${pct(w.policy.tuitionSubsidy, 0)}`, district: w.districts.find((d) => d.kind === 'university')!.id });
     // universities respond to demand by opening teaching posts
     if (rejected > 0) for (const o of unis) if (o.cash > -o.expenses && o.openings < 4) o.openings += Math.min(4, 1 + Math.round(rejected / 40));
   }
