@@ -1,0 +1,37 @@
+{
+  "name": "worldzero",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "WORLDZERO — an autonomous civilisation simulation engine controlled by natural language (fictional, synthetic data).",
+  "scripts": {
+    "dev": "concurrently -k -n server,web \"npm run server\" \"vite\"",
+    "server": "tsx --disable-warning=ExperimentalWarning server/index.ts",
+    "build": "vite build",
+    "start": "vite build && npm run server",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fastify/static": "^8.0.0",
+    "@react-three/drei": "^9.114.0",
+    "@react-three/fiber": "^8.17.10",
+    "fastify": "^5.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "three": "^0.169.0",
+    "zustand": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.0",
+    "@types/react": "^18.3.11",
+    "@types/react-dom": "^18.3.0",
+    "@types/three": "^0.169.0",
+    "@vitejs/plugin-react": "^4.3.2",
+    "concurrently": "^9.0.1",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.2",
+    "vite": "^5.4.8",
+    "vitest": "^2.1.2"
+  }
+}

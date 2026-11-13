@@ -1,0 +1,6 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "worldzero", "runtimeExecutable": "npm", "runtimeArgs": ["run", "server"], "port": 4000 }
+  ]
+}
